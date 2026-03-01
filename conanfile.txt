@@ -1,0 +1,12 @@
+
+[requires]
+cxxopts/3.0.0
+fmt/10.2.1
+libgit2/1.7.2
+
+[generators]
+CMakeToolchain
+CMakeDeps
+
+[layout]
+cmake_layout
