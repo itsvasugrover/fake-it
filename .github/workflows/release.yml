@@ -46,7 +46,7 @@ jobs:
       # cmake_layout paths as Linux/macOS.
       - name: Install MinGW (Windows)
         if: runner.os == 'Windows'
-        uses: egor-tensin/setup-mingw@v4
+        uses: egor-tensin/setup-mingw@v3
         with:
           platform: x64
 
