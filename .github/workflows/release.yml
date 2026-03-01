@@ -1,0 +1,71 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+
+permissions:
+    contents: write # needed to create the GitHub Release and upload assets
+
+jobs:
+    build:
+        name: Build ${{ matrix.artifact }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      binary: fake-it
+                      artifact: fake-it-linux-x86_64
+                    - os: macos-13 # Intel runner — produces a universal-compatible binary
+                      binary: fake-it
+                      artifact: fake-it-macos-x86_64
+                    - os: macos-latest # Apple Silicon (M-series)
+                      binary: fake-it
+                      artifact: fake-it-macos-arm64
+                    - os: windows-latest
+                      binary: fake-it.exe
+                      artifact: fake-it-windows-x86_64.exe
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+
+            - name: Install Conan
+              run: pip install "conan>=2.0"
+
+            - name: Detect Conan profile
+              run: conan profile detect --force
+
+            - name: Install dependencies
+              run: conan install . --build=missing -s build_type=Release
+
+            - name: Configure & build
+              shell: bash
+              run: |
+                  source build/Release/generators/conanbuild.sh
+                  cmake --preset conan-release
+                  cmake --build build/Release --config Release
+
+            # MSVC puts the binary in a config subfolder; handle both layouts
+            - name: Stage artifact
+              shell: bash
+              run: |
+                  if [ -f "build/Release/Release/${{ matrix.binary }}" ]; then
+                    cp "build/Release/Release/${{ matrix.binary }}" "${{ matrix.artifact }}"
+                  else
+                    cp "build/Release/${{ matrix.binary }}" "${{ matrix.artifact }}"
+                  fi
+
+            - name: Upload release asset
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: ${{ matrix.artifact }}
+                  generate_release_notes: true
