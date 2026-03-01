@@ -1,0 +1,69 @@
+name: CI
+
+on:
+    push:
+        branches: [main, master]
+        paths-ignore:
+            - "**.md"
+            - ".github/ISSUE_TEMPLATE/**"
+    pull_request:
+        branches: [main, master]
+
+jobs:
+    build:
+        name: Build on ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      binary: fake-it
+                    - os: macos-latest
+                      binary: fake-it
+                    - os: windows-latest
+                      binary: fake-it.exe
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+
+            - name: Install Conan
+              run: pip install "conan>=2.0"
+
+            - name: Detect Conan profile
+              run: conan profile detect --force
+
+            - name: Install dependencies
+              run: conan install . --build=missing -s build_type=Release
+
+            # Source the Conan build-env script (sets CC/CXX/PATH for the compiler).
+            # Conan generates a .sh on every platform; on Windows this works in Git Bash.
+            - name: Configure & build
+              shell: bash
+              run: |
+                  source build/Release/generators/conanbuild.sh
+                  cmake --preset conan-release
+                  cmake --build build/Release --config Release
+
+            # MSVC places the binary one level deeper (build/Release/Release/fake-it.exe)
+            - name: Locate binary
+              shell: bash
+              run: |
+                  if [ -f "build/Release/Release/${{ matrix.binary }}" ]; then
+                    echo "BINARY_PATH=build/Release/Release/${{ matrix.binary }}" >> "$GITHUB_ENV"
+                  else
+                    echo "BINARY_PATH=build/Release/${{ matrix.binary }}" >> "$GITHUB_ENV"
+                  fi
+
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: fake-it-${{ matrix.os }}
+                  path: ${{ env.BINARY_PATH }}
+                  if-no-files-found: error
