@@ -51,9 +51,9 @@ Every tagged release ships ready-to-run binaries for all three platforms — no 
 | Platform | File |
 |---|---|
 | Linux x86-64 | `fake-it-linux-x86_64` |
+| Linux ARM64 | `fake-it-linux-arm64` |
 | macOS Intel | `fake-it-macos-x86_64` |
 | macOS Apple Silicon | `fake-it-macos-arm64` |
-| Windows x86-64 | `fake-it-windows-x86_64.exe` |
 
 Download the latest binary from the [Releases](../../releases/latest) page, make it executable (`chmod +x` on Linux/macOS), and run it.
 
